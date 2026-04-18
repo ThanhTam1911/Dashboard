@@ -68,35 +68,87 @@ st.header("☀️ Solar Power Generation & Optimization Intelligence")
 
 tabs = st.tabs(["Performance Metrics", "Operational Strategy", "Asset Health", "Deep Analytics", "⚡ Real-time Monitoring"])
 
-# ====================== TAB 1: Performance Metrics ======================
+# ====================== TAB 1: PERFORMANCE METRICS (ĐÃ CÓ BIỂU ĐỒ KẾT HỢP) ======================
 with tabs[0]:
     st.subheader("📊 KPI & Yield Analysis")
+    
     if not filtered_perf.empty:
         total_act = filtered_perf['metrics.actual_daily_yield'].sum()
         total_pre = filtered_perf['metrics.predicted_daily_yield'].sum()
         gap = total_act - total_pre
 
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Actual Yield", f"{total_act:,.1f} kWh")
-        m2.metric("Predictive Baseline", f"{total_pre:,.1f} kWh")
-        m3.metric("Variance (Gap)", f"{gap:,.1f} kWh", delta=f"{gap:,.1f}")
-        m4.metric("Avg Efficiency", f"{filtered_perf['metrics.avg_conversion_efficiency'].mean():.2%}")
+        # KPI Metrics
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Total Actual Yield", f"{total_act:,.1f} kWh")
+        col2.metric("Total AI Prediction", f"{total_pre:,.1f} kWh")
+        col3.metric("Variance (Gap)", f"{gap:,.1f} kWh", delta=f"{gap:,.1f} kWh")
+        col4.metric("Avg Efficiency", f"{filtered_perf['metrics.avg_conversion_efficiency'].mean():.2%}")
 
-        # Waterfall chart
-        st.write("**Waterfall: Predictive to Actual Flow**")
+        st.divider()
+
+        # Waterfall Chart
+        st.write("**Waterfall: AI Prediction → Actual Yield**")
         fig_wf = go.Figure(go.Waterfall(
-            name="Yield Gap", orientation="v",
+            orientation="v",
             measure=["absolute", "relative", "total"],
             x=["AI Prediction", "Yield Gap", "Actual Result"],
-            textposition="outside",
             text=[f"{total_pre:,.0f}", f"{gap:,.0f}", f"{total_act:,.0f}"],
             y=[total_pre, gap, total_act],
             increasing={"marker": {"color": "#2ecc71"}},
             decreasing={"marker": {"color": "#e74c3c"}},
             totals={"marker": {"color": "#3498db"}}
         ))
-        fig_wf.update_layout(template="plotly_white", height=500)
+        fig_wf.update_layout(height=450, template="plotly_white")
         st.plotly_chart(fig_wf, use_container_width=True)
+
+        st.divider()
+
+        # ==================== BIỂU ĐỒ KẾT HỢP THEO INVERTER ====================
+        st.subheader("⚖️ So sánh Sản lượng theo từng Inverter")
+
+        df_inv = filtered_perf.groupby('source_key').agg({
+            'metrics.actual_daily_yield': 'sum',
+            'metrics.predicted_daily_yield': 'sum'
+        }).reset_index()
+
+        df_inv = df_inv.sort_values('metrics.actual_daily_yield', ascending=False)
+
+        fig_combined = go.Figure()
+
+        # Cột Actual Yield
+        fig_combined.add_trace(go.Bar(
+            x=df_inv['source_key'],
+            y=df_inv['metrics.actual_daily_yield'],
+            name='Actual Yield (Thực tế)',
+            marker_color='#3498db',
+            text=df_inv['metrics.actual_daily_yield'].round(1),
+            textposition='auto'
+        ))
+
+        # Đường AI Predicted
+        fig_combined.add_trace(go.Scatter(
+            x=df_inv['source_key'],
+            y=df_inv['metrics.predicted_daily_yield'],
+            name='AI Predicted Target',
+            mode='lines+markers',
+            line=dict(color='#e74c3c', width=4),
+            marker=dict(size=10)
+        ))
+
+        fig_combined.update_layout(
+            title="So sánh Sản lượng Thực tế vs AI Dự báo theo từng Inverter",
+            template="plotly_white",
+            height=550,
+            xaxis_title="Inverter ID",
+            yaxis_title="Daily Yield (kWh)",
+            legend=dict(orientation="h", y=1.12),
+            barmode='group'
+        )
+
+        st.plotly_chart(fig_combined, use_container_width=True)
+
+    else:
+        st.warning("Không có dữ liệu hiệu suất để hiển thị.")
 
 # ====================== TAB 2: Operational Strategy ======================
 with tabs[1]:
@@ -107,13 +159,12 @@ with tabs[1]:
             x="features_snapshot.irradiation", 
             y="predictions.expected_ac_power", 
             color="weather_condition", 
-            trendline="ols",
             title="Irradiation vs AC Generation Analysis"
         )
         fig_opt.update_layout(template="plotly_white")
         st.plotly_chart(fig_opt, use_container_width=True)
 
-    # AI Simulator
+    st.divider()
     st.subheader("AI Generation Simulator (What-If Analysis)")
     sc1, sc2 = st.columns([1, 2])
     with sc1:
@@ -123,10 +174,8 @@ with tabs[1]:
         
         base_eff, area, temp_coeff = 0.18, 8000, 0.004
         expected_yield = sim_irr * area * base_eff * (1 - temp_coeff * (sim_temp - 25))
-        if sim_weather == "Cloudy":
-            expected_yield *= 0.7
-        elif sim_weather == "Partly Cloudy":
-            expected_yield *= 0.9
+        if sim_weather == "Cloudy": expected_yield *= 0.7
+        elif sim_weather == "Partly Cloudy": expected_yield *= 0.9
 
     with sc2:
         fig_sim = go.Figure(go.Indicator(
@@ -134,15 +183,12 @@ with tabs[1]:
             value=expected_yield, 
             title={'text': "Predicted Power (kW)"},
             gauge={'axis': {'range': [None, 2000]}, 
-                   'bar': {'color': "#3498db"}, 
-                   'threshold': {'line': {'color': "red", 'width': 4}, 'value': 1800}}
+                   'bar': {'color': "#3498db"}}
         ))
         fig_sim.update_layout(height=350)
         st.plotly_chart(fig_sim, use_container_width=True)
 
-# ====================== TAB 3 & 4 (giữ nguyên như cũ) ======================
-# ... (bạn có thể giữ nguyên phần Asset Health và Deep Analytics)
-
+# ====================== TAB 3: Asset Health ======================
 with tabs[2]:
     st.subheader("Asset Integrity & Maintenance Log")
     if not filtered_perf.empty:
@@ -151,107 +197,11 @@ with tabs[2]:
             x="source_key", 
             y="classification.health_score", 
             color="classification.status", 
-            title="Inverter Health Score", 
+            title="Inverter Health Score",
             range_y=[0, 100],
             color_discrete_map={'Good': '#27ae60', 'Needs Attention': '#e67e22'}
         )
         fig_health.update_layout(template="plotly_white")
         st.plotly_chart(fig_health, use_container_width=True)
     
-    if not df_alerts.empty:
-        st.table(df_alerts[['source_key', 'severity', 'root_cause_analysis.suggested_action']].head(10))
-
-with tabs[3]:
-    st.subheader("Advanced Predictive Analytics")
-    if not filtered_weather.empty:
-        col1, col2 = st.columns(2)
-        with col1:
-            fig_ts = px.area(
-                filtered_weather.sort_values('timestamp'), 
-                x="timestamp", 
-                y="predictions.expected_ac_power", 
-                title="Projected Generation Potential"
-            )
-            st.plotly_chart(fig_ts, use_container_width=True)
-        with col2:
-            fig_hm = px.density_heatmap(
-                filtered_weather, 
-                x="features_snapshot.module_temp", 
-                y="features_snapshot.irradiation", 
-                z="predictions.expected_ac_power", 
-                histfunc="avg", 
-                title="Density Heatmap", 
-                color_continuous_scale="Viridis"
-            )
-            st.plotly_chart(fig_hm, use_container_width=True)
-
-# ====================== TAB 5: REAL-TIME MONITORING (ĐÃ SỬA) ======================
-with tabs[4]:
-    st.subheader("⚡ Live Data Stream Simulator")
-    
-    rt_cursor = db['realtime_feeds'].find().sort("original_ts", 1).allow_disk_use(True)
-    df_rt_raw = pd.DataFrame(list(rt_cursor))
-    
-    if df_rt_raw.empty:
-        st.warning("No real-time feed data found in MongoDB.")
-    else:
-        # ==================== PHẦN SCALING ĐÃ SỬA ====================
-        scaling_features = ['dc_power', 'ac_power', 'irradiation']
-        
-        for feature in scaling_features:
-            if feature == 'dc_power':
-                idx = 0
-            elif feature == 'ac_power':
-                idx = 1
-            elif feature == 'irradiation':
-                idx = 2
-            else:
-                continue
-                
-            min_val = scaler_minmax.min_[idx]
-            scale_val = scaler_minmax.scale_[idx]
-            df_rt_raw[feature] = np.expm1((df_rt_raw[feature] - min_val) / scale_val)
-        
-        # Scale Module Temperature (StandardScaler)
-        if 'module_temp' in df_rt_raw.columns:
-            t_idx = 0  # ← Điều chỉnh index này nếu lúc fit scaler_standard bạn có nhiều feature hơn
-            df_rt_raw['module_temp'] = (df_rt_raw['module_temp'] * scaler_standard.scale_[t_idx]) + scaler_standard.mean_[t_idx]
-        
-        # Gom nhóm dữ liệu
-        df_rt = df_rt_raw.groupby('original_ts').agg({
-            'ac_power': 'mean',
-            'dc_power': 'mean',
-            'irradiation': 'mean',
-            'module_temp': 'mean'
-        }).reset_index()
-        
-        # Simulation
-        if st.button("▶ Start Real-time Simulation"):
-            chart_placeholder = st.empty()
-            metric_placeholder = st.empty()
-            
-            for i in range(1, len(df_rt) + 1):
-                current_df = df_rt.iloc[:i].copy()
-                latest = df_rt.iloc[i-1]
-                
-                with metric_placeholder.container():
-                    c1, c2, c3 = st.columns(3)
-                    c1.metric("AC Power (Avg)", f"{latest['ac_power']:.2f} kW")
-                    c2.metric("Irradiation (Avg)", f"{latest['irradiation']:.2f} W/m²")
-                    c3.metric("Module Temp (Avg)", f"{latest['module_temp']:.1f} °C")
-                
-                fig_rt = go.Figure()
-                fig_rt.add_trace(go.Scatter(x=current_df['original_ts'], y=current_df['ac_power'], 
-                                          name="AC Power", line=dict(color="#2ecc71")))
-                fig_rt.add_trace(go.Scatter(x=current_df['original_ts'], y=current_df['dc_power'], 
-                                          name="DC Power", line=dict(color="#3498db", dash='dash')))
-                
-                fig_rt.update_layout(
-                    template="plotly_white", 
-                    height=450, 
-                    xaxis_title="Timestamp",
-                    yaxis_title="Power (kW)"
-                )
-                
-                chart_placeholder.plotly_chart(fig_rt, use_container_width=True)
-                time.sleep(0.08)
+    if not df_alerts

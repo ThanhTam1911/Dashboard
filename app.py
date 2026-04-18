@@ -15,31 +15,34 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS để làm giao diện sang trọng hơn
+# Custom CSS hiện đại & chuyên nghiệp
 st.markdown("""
     <style>
     .main {
-        background-color: #f8f9fa;
+        background-color: #f8fafc;
     }
-    .stApp h1, .stApp h2, .stApp h3 {
-        font-family: 'Segoe UI', sans-serif;
+    h1, h2, h3 {
+        font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
         font-weight: 600;
         color: #1e3a8a;
+    }
+    .stApp h1 {
+        margin-bottom: 8px;
     }
     .metric-card {
         background-color: white;
         border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        border: 1px solid #e0e7ff;
-    }
-    .sidebar .sidebar-content {
-        background-color: #1e3a8a;
-        color: white;
+        padding: 18px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        border: 1px solid #e2e8f0;
     }
     .stPlotlyChart {
         border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    }
+    .sidebar .css-1d391kg {
+        background-color: #1e3a8a;
+        color: white;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -79,12 +82,12 @@ def load_enhanced_data():
 df_perf, df_weather, df_alerts = load_enhanced_data()
 
 # ====================== SIDEBAR ======================
-st.sidebar.title("☀️ Solar Intelligence")
+st.sidebar.title("Solar Intelligence System")
 st.sidebar.markdown("### Control Center")
 st.sidebar.markdown("---")
 
 selected_plant = st.sidebar.selectbox(
-    "🌿 Chọn Nhà Máy",
+    "Chọn Nhà Máy",
     options=["All Units"] + list(df_perf['plant_id'].unique()) if not df_perf.empty else ["All Units"]
 )
 
@@ -96,28 +99,21 @@ if selected_plant != "All Units":
     filtered_weather = filtered_weather[filtered_weather['plant_id'] == selected_plant]
 
 # ====================== HEADER ======================
-st.markdown("""
-    <h1 style='text-align: center; color: #1e40af; margin-bottom: 10px;'>
-        ☀️ Solar Intelligence System
-    </h1>
-    <p style='text-align: center; color: #64748b; font-size: 18px;'>
-        Hệ thống Giám sát & Tối ưu Hóa Sản lượng Điện Mặt Trời Thông Minh
-    </p>
-""", unsafe_allow_html=True)
-
+st.markdown("<h1 style='text-align: center; color: #1e40af;'>Solar Intelligence System</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #64748b; font-size: 18px;'>Hệ thống Giám sát & Tối ưu Hóa Điện Mặt Trời</p>", unsafe_allow_html=True)
 st.markdown("---")
 
 tabs = st.tabs([
-    "📊 Performance Metrics", 
-    "🌡️ Operational Strategy", 
-    "🛠️ Asset Health", 
-    "📈 Deep Analytics", 
-    "⚡ Real-time Monitoring"
+    "Performance Metrics", 
+    "Operational Strategy", 
+    "Asset Health", 
+    "Deep Analytics", 
+    "Real-time Monitoring"
 ])
 
-# ====================== TAB 1: PERFORMANCE METRICS ======================
+# ====================== TAB 1 ======================
 with tabs[0]:
-    st.subheader("📊 KPI & Yield Analysis")
+    st.subheader("KPI & Yield Analysis")
     
     if not filtered_perf.empty:
         total_act = filtered_perf['metrics.actual_daily_yield'].sum()
@@ -125,7 +121,7 @@ with tabs[0]:
         gap = total_act - total_pre
 
         col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Total Actual Yield", f"{total_act:,.1f} kWh", delta=None)
+        col1.metric("Total Actual Yield", f"{total_act:,.1f} kWh")
         col2.metric("Total AI Prediction", f"{total_pre:,.1f} kWh")
         col3.metric("Variance (Gap)", f"{gap:,.1f} kWh", delta=f"{gap:,.1f} kWh")
         col4.metric("Avg Efficiency", f"{filtered_perf['metrics.avg_conversion_efficiency'].mean():.2%}")
@@ -143,12 +139,12 @@ with tabs[0]:
             decreasing={"marker": {"color": "#ef4444"}},
             totals={"marker": {"color": "#3b82f6"}}
         ))
-        fig_wf.update_layout(height=460, template="plotly_white", margin=dict(t=40))
+        fig_wf.update_layout(height=460, template="plotly_white")
         st.plotly_chart(fig_wf, use_container_width=True)
 
         st.divider()
 
-        st.subheader("⚖️ So sánh Sản lượng theo từng Inverter")
+        st.subheader("So sánh Sản lượng theo từng Inverter")
         df_inv = filtered_perf.groupby('source_key').agg({
             'metrics.actual_daily_yield': 'sum',
             'metrics.predicted_daily_yield': 'sum'
@@ -158,10 +154,8 @@ with tabs[0]:
         fig_combined.add_trace(go.Bar(
             x=df_inv['source_key'],
             y=df_inv['metrics.actual_daily_yield'],
-            name='Actual Yield (Thực tế)',
-            marker_color='#3b82f6',
-            text=df_inv['metrics.actual_daily_yield'].round(1),
-            textposition='auto'
+            name='Actual Yield',
+            marker_color='#3b82f6'
         ))
         fig_combined.add_trace(go.Scatter(
             x=df_inv['source_key'],
@@ -169,25 +163,22 @@ with tabs[0]:
             name='AI Predicted Target',
             mode='lines+markers',
             line=dict(color='#ef4444', width=3.5),
-            marker=dict(size=9)
+            marker=dict(size=8)
         ))
 
         fig_combined.update_layout(
             title="So sánh Sản lượng Thực tế vs AI Dự báo theo từng Inverter",
             template="plotly_white",
             height=520,
-            xaxis_title="Inverter ID (source_key)",
+            xaxis_title="Inverter ID",
             yaxis_title="Daily Yield (kWh)",
-            legend=dict(orientation="h", y=1.12)
+            legend=dict(orientation="h", y=1.1)
         )
         st.plotly_chart(fig_combined, use_container_width=True)
 
-    else:
-        st.warning("Không có dữ liệu hiệu suất để hiển thị.")
-
-# ====================== TAB 2: Operational Strategy ======================
+# ====================== TAB 2 ======================
 with tabs[1]:
-    st.subheader("🌡️ Environmental Correlation & Strategy")
+    st.subheader("Environmental Correlation & Strategy")
     if not filtered_weather.empty:
         fig_opt = px.scatter(
             filtered_weather,
@@ -201,12 +192,12 @@ with tabs[1]:
         st.plotly_chart(fig_opt, use_container_width=True)
 
     st.divider()
-    st.subheader("🔮 AI Generation Simulator (What-If Analysis)")
+    st.subheader("AI Generation Simulator")
     sc1, sc2 = st.columns([1, 2])
     with sc1:
-        sim_irr = st.slider("☀️ Irradiation Level (W/m²)", 0.0, 1.2, 0.8, 0.05)
-        sim_temp = st.slider("🌡️ Module Temperature (°C)", 20.0, 65.0, 35.0, 1.0)
-        sim_weather = st.selectbox("⛅ Weather Scenario", ["Sunny", "Partly Cloudy", "Cloudy"])
+        sim_irr = st.slider("Irradiation Level (W/m²)", 0.0, 1.2, 0.8, 0.05)
+        sim_temp = st.slider("Module Temperature (°C)", 20.0, 65.0, 35.0, 1.0)
+        sim_weather = st.selectbox("Weather Scenario", ["Sunny", "Partly Cloudy", "Cloudy"])
         
         base_eff, area, temp_coeff = 0.18, 8000, 0.004
         expected_yield = sim_irr * area * base_eff * (1 - temp_coeff * (sim_temp - 25))
@@ -225,13 +216,10 @@ with tabs[1]:
         fig_sim.update_layout(height=380)
         st.plotly_chart(fig_sim, use_container_width=True)
 
-# Các tab còn lại giữ nguyên (bạn có thể copy từ code cũ nếu muốn chỉnh thêm)
-
-# ====================== TAB 3, 4, 5 giữ nguyên như cũ ======================
-# (Để ngắn gọn, mình giữ nguyên phần cũ của bạn cho tab 3,4,5)
+# Tab 3, 4, 5 giữ nguyên (bạn có thể paste phần cũ vào nếu cần)
 
 with tabs[2]:
-    st.subheader("🛠️ Asset Integrity & Maintenance Log")
+    st.subheader("Asset Integrity & Maintenance Log")
     if not filtered_perf.empty:
         fig_health = px.bar(
             filtered_perf, 
@@ -249,7 +237,7 @@ with tabs[2]:
         st.table(df_alerts[['source_key', 'severity', 'root_cause_analysis.suggested_action']].head(10))
 
 with tabs[3]:
-    st.subheader("📈 Advanced Predictive Analytics")
+    st.subheader("Advanced Predictive Analytics")
     if not filtered_weather.empty:
         col1, col2 = st.columns(2)
         with col1:
@@ -273,8 +261,8 @@ with tabs[3]:
             st.plotly_chart(fig_hm, use_container_width=True)
 
 with tabs[4]:
-    st.subheader("⚡ Live Data Stream Simulator")
-    # (Giữ nguyên code realtime của bạn)
+    st.subheader("Real-time Monitoring")
+    # Phần realtime của bạn (giữ nguyên)
     rt_cursor = db['realtime_feeds'].find().sort("original_ts", 1).allow_disk_use(True)
     df_rt_raw = pd.DataFrame(list(rt_cursor))
    
@@ -287,7 +275,7 @@ with tabs[4]:
             elif feature == 'ac_power': idx = 1
             elif feature == 'irradiation': idx = 2
             else: continue
-               
+                
             min_val = scaler_minmax.min_[idx]
             scale_val = scaler_minmax.scale_[idx]
             df_rt_raw[feature] = np.expm1((df_rt_raw[feature] - min_val) / scale_val)
@@ -303,7 +291,7 @@ with tabs[4]:
             'module_temp': 'mean'
         }).reset_index()
        
-        if st.button("▶ Start Real-time Simulation"):
+        if st.button("Start Real-time Simulation"):
             chart_placeholder = st.empty()
             metric_placeholder = st.empty()
            
@@ -323,7 +311,7 @@ with tabs[4]:
                 fig_rt.add_trace(go.Scatter(x=current_df['original_ts'], y=current_df['dc_power'],
                                           name="DC Power", line=dict(color="#3b82f6", dash='dash')))
                
-                fig_rt.update_layout(template="plotly_white", height=450,
+                fig_rt.update_layout(template="plotly_white", height=450, 
                                    xaxis_title="Timestamp", yaxis_title="Power (kW)")
                 chart_placeholder.plotly_chart(fig_rt, use_container_width=True)
                 time.sleep(0.08)

@@ -7,12 +7,42 @@ import plotly.graph_objects as go
 import time
 import joblib
 
-# ====================== CONFIG ======================
+# ====================== CONFIG - GIAO DIỆN CHUYÊN NGHIỆP ======================
 st.set_page_config(
-    page_title="Solar Intelligence System", 
+    page_title="Solar Intelligence System",
     layout="wide",
-    page_icon="☀️"
+    page_icon="☀️",
+    initial_sidebar_state="expanded"
 )
+
+# Custom CSS để làm giao diện sang trọng hơn
+st.markdown("""
+    <style>
+    .main {
+        background-color: #f8f9fa;
+    }
+    .stApp h1, .stApp h2, .stApp h3 {
+        font-family: 'Segoe UI', sans-serif;
+        font-weight: 600;
+        color: #1e3a8a;
+    }
+    .metric-card {
+        background-color: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        border: 1px solid #e0e7ff;
+    }
+    .sidebar .sidebar-content {
+        background-color: #1e3a8a;
+        color: white;
+    }
+    .stPlotlyChart {
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 # ====================== DATABASE CONNECTION ======================
 MONGO_URI = "mongodb+srv://ThanhTam:Tamdo1911@clusterbigdata.up9klu6.mongodb.net/"
@@ -49,9 +79,12 @@ def load_enhanced_data():
 df_perf, df_weather, df_alerts = load_enhanced_data()
 
 # ====================== SIDEBAR ======================
-st.sidebar.title("🔧 Control Center")
+st.sidebar.title("☀️ Solar Intelligence")
+st.sidebar.markdown("### Control Center")
+st.sidebar.markdown("---")
+
 selected_plant = st.sidebar.selectbox(
-    "Select Plant Unit", 
+    "🌿 Chọn Nhà Máy",
     options=["All Units"] + list(df_perf['plant_id'].unique()) if not df_perf.empty else ["All Units"]
 )
 
@@ -62,10 +95,25 @@ if selected_plant != "All Units":
     filtered_perf = filtered_perf[filtered_perf['plant_id'] == selected_plant]
     filtered_weather = filtered_weather[filtered_weather['plant_id'] == selected_plant]
 
-# ====================== MAIN TITLE ======================
-st.header("☀️ Solar Power Generation & Optimization Intelligence")
+# ====================== HEADER ======================
+st.markdown("""
+    <h1 style='text-align: center; color: #1e40af; margin-bottom: 10px;'>
+        ☀️ Solar Intelligence System
+    </h1>
+    <p style='text-align: center; color: #64748b; font-size: 18px;'>
+        Hệ thống Giám sát & Tối ưu Hóa Sản lượng Điện Mặt Trời Thông Minh
+    </p>
+""", unsafe_allow_html=True)
 
-tabs = st.tabs(["Performance Metrics", "Operational Strategy", "Asset Health", "Deep Analytics", "⚡ Real-time Monitoring"])
+st.markdown("---")
+
+tabs = st.tabs([
+    "📊 Performance Metrics", 
+    "🌡️ Operational Strategy", 
+    "🛠️ Asset Health", 
+    "📈 Deep Analytics", 
+    "⚡ Real-time Monitoring"
+])
 
 # ====================== TAB 1: PERFORMANCE METRICS ======================
 with tabs[0]:
@@ -77,7 +125,7 @@ with tabs[0]:
         gap = total_act - total_pre
 
         col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Total Actual Yield", f"{total_act:,.1f} kWh")
+        col1.metric("Total Actual Yield", f"{total_act:,.1f} kWh", delta=None)
         col2.metric("Total AI Prediction", f"{total_pre:,.1f} kWh")
         col3.metric("Variance (Gap)", f"{gap:,.1f} kWh", delta=f"{gap:,.1f} kWh")
         col4.metric("Avg Efficiency", f"{filtered_perf['metrics.avg_conversion_efficiency'].mean():.2%}")
@@ -91,11 +139,11 @@ with tabs[0]:
             x=["AI Prediction", "Yield Gap", "Actual Result"],
             text=[f"{total_pre:,.0f}", f"{gap:,.0f}", f"{total_act:,.0f}"],
             y=[total_pre, gap, total_act],
-            increasing={"marker": {"color": "#2ecc71"}},
-            decreasing={"marker": {"color": "#e74c3c"}},
-            totals={"marker": {"color": "#3498db"}}
+            increasing={"marker": {"color": "#10b981"}},
+            decreasing={"marker": {"color": "#ef4444"}},
+            totals={"marker": {"color": "#3b82f6"}}
         ))
-        fig_wf.update_layout(height=450, template="plotly_white")
+        fig_wf.update_layout(height=460, template="plotly_white", margin=dict(t=40))
         st.plotly_chart(fig_wf, use_container_width=True)
 
         st.divider()
@@ -111,7 +159,7 @@ with tabs[0]:
             x=df_inv['source_key'],
             y=df_inv['metrics.actual_daily_yield'],
             name='Actual Yield (Thực tế)',
-            marker_color='#3498db',
+            marker_color='#3b82f6',
             text=df_inv['metrics.actual_daily_yield'].round(1),
             textposition='auto'
         ))
@@ -120,7 +168,7 @@ with tabs[0]:
             y=df_inv['metrics.predicted_daily_yield'],
             name='AI Predicted Target',
             mode='lines+markers',
-            line=dict(color='#e74c3c', width=3.5),
+            line=dict(color='#ef4444', width=3.5),
             marker=dict(size=9)
         ))
 
@@ -137,29 +185,28 @@ with tabs[0]:
     else:
         st.warning("Không có dữ liệu hiệu suất để hiển thị.")
 
-# ====================== TAB 2: Operational Strategy (ĐÃ KHÔI PHỤC TRENDLINE) ======================
+# ====================== TAB 2: Operational Strategy ======================
 with tabs[1]:
-    st.subheader("Environmental Correlation & Strategy")
+    st.subheader("🌡️ Environmental Correlation & Strategy")
     if not filtered_weather.empty:
-        # Biểu đồ scatter với đường trung bình (trendline)
         fig_opt = px.scatter(
-            filtered_weather, 
-            x="features_snapshot.irradiation", 
-            y="predictions.expected_ac_power", 
-            color="weather_condition", 
-            trendline="ols",                    # ← Đã khôi phục đường trung bình
+            filtered_weather,
+            x="features_snapshot.irradiation",
+            y="predictions.expected_ac_power",
+            color="weather_condition",
+            trendline="ols",
             title="Irradiation vs AC Generation Analysis"
         )
-        fig_opt.update_layout(template="plotly_white")
+        fig_opt.update_layout(template="plotly_white", height=520)
         st.plotly_chart(fig_opt, use_container_width=True)
 
     st.divider()
-    st.subheader("AI Generation Simulator (What-If Analysis)")
+    st.subheader("🔮 AI Generation Simulator (What-If Analysis)")
     sc1, sc2 = st.columns([1, 2])
     with sc1:
-        sim_irr = st.slider("Irradiation Level (W/m²)", 0.0, 1.2, 0.8, 0.05)
-        sim_temp = st.slider("Module Temperature (°C)", 20.0, 65.0, 35.0, 1.0)
-        sim_weather = st.selectbox("Weather Scenario", ["Sunny", "Partly Cloudy", "Cloudy"])
+        sim_irr = st.slider("☀️ Irradiation Level (W/m²)", 0.0, 1.2, 0.8, 0.05)
+        sim_temp = st.slider("🌡️ Module Temperature (°C)", 20.0, 65.0, 35.0, 1.0)
+        sim_weather = st.selectbox("⛅ Weather Scenario", ["Sunny", "Partly Cloudy", "Cloudy"])
         
         base_eff, area, temp_coeff = 0.18, 8000, 0.004
         expected_yield = sim_irr * area * base_eff * (1 - temp_coeff * (sim_temp - 25))
@@ -170,17 +217,21 @@ with tabs[1]:
 
     with sc2:
         fig_sim = go.Figure(go.Indicator(
-            mode="gauge+number", 
-            value=expected_yield, 
+            mode="gauge+number",
+            value=expected_yield,
             title={'text': "Predicted Power (kW)"},
-            gauge={'axis': {'range': [None, 2000]}, 'bar': {'color': "#3498db"}}
+            gauge={'axis': {'range': [None, 2000]}, 'bar': {'color': "#3b82f6"}}
         ))
-        fig_sim.update_layout(height=350)
+        fig_sim.update_layout(height=380)
         st.plotly_chart(fig_sim, use_container_width=True)
 
-# ====================== TAB 3: Asset Health ======================
+# Các tab còn lại giữ nguyên (bạn có thể copy từ code cũ nếu muốn chỉnh thêm)
+
+# ====================== TAB 3, 4, 5 giữ nguyên như cũ ======================
+# (Để ngắn gọn, mình giữ nguyên phần cũ của bạn cho tab 3,4,5)
+
 with tabs[2]:
-    st.subheader("Asset Integrity & Maintenance Log")
+    st.subheader("🛠️ Asset Integrity & Maintenance Log")
     if not filtered_perf.empty:
         fig_health = px.bar(
             filtered_perf, 
@@ -189,7 +240,7 @@ with tabs[2]:
             color="classification.status", 
             title="Inverter Health Score",
             range_y=[0, 100],
-            color_discrete_map={'Good': '#27ae60', 'Needs Attention': '#e67e22'}
+            color_discrete_map={'Good': '#10b981', 'Needs Attention': '#f59e0b'}
         )
         fig_health.update_layout(template="plotly_white")
         st.plotly_chart(fig_health, use_container_width=True)
@@ -197,9 +248,8 @@ with tabs[2]:
     if not df_alerts.empty:
         st.table(df_alerts[['source_key', 'severity', 'root_cause_analysis.suggested_action']].head(10))
 
-# ====================== TAB 4: Deep Analytics ======================
 with tabs[3]:
-    st.subheader("Advanced Predictive Analytics")
+    st.subheader("📈 Advanced Predictive Analytics")
     if not filtered_weather.empty:
         col1, col2 = st.columns(2)
         with col1:
@@ -222,13 +272,12 @@ with tabs[3]:
             )
             st.plotly_chart(fig_hm, use_container_width=True)
 
-# ====================== TAB 5: Real-time Monitoring ======================
 with tabs[4]:
     st.subheader("⚡ Live Data Stream Simulator")
-    
+    # (Giữ nguyên code realtime của bạn)
     rt_cursor = db['realtime_feeds'].find().sort("original_ts", 1).allow_disk_use(True)
     df_rt_raw = pd.DataFrame(list(rt_cursor))
-    
+   
     if df_rt_raw.empty:
         st.warning("No real-time feed data found in MongoDB.")
     else:
@@ -238,43 +287,43 @@ with tabs[4]:
             elif feature == 'ac_power': idx = 1
             elif feature == 'irradiation': idx = 2
             else: continue
-                
+               
             min_val = scaler_minmax.min_[idx]
             scale_val = scaler_minmax.scale_[idx]
             df_rt_raw[feature] = np.expm1((df_rt_raw[feature] - min_val) / scale_val)
-        
+       
         if 'module_temp' in df_rt_raw.columns:
             t_idx = 0
             df_rt_raw['module_temp'] = (df_rt_raw['module_temp'] * scaler_standard.scale_[t_idx]) + scaler_standard.mean_[t_idx]
-        
+       
         df_rt = df_rt_raw.groupby('original_ts').agg({
             'ac_power': 'mean',
             'dc_power': 'mean',
             'irradiation': 'mean',
             'module_temp': 'mean'
         }).reset_index()
-        
+       
         if st.button("▶ Start Real-time Simulation"):
             chart_placeholder = st.empty()
             metric_placeholder = st.empty()
-            
+           
             for i in range(1, len(df_rt) + 1):
                 current_df = df_rt.iloc[:i].copy()
                 latest = df_rt.iloc[i-1]
-                
+               
                 with metric_placeholder.container():
                     c1, c2, c3 = st.columns(3)
                     c1.metric("AC Power (Avg)", f"{latest['ac_power']:.2f} kW")
                     c2.metric("Irradiation (Avg)", f"{latest['irradiation']:.2f} W/m²")
                     c3.metric("Module Temp (Avg)", f"{latest['module_temp']:.1f} °C")
-                
+               
                 fig_rt = go.Figure()
-                fig_rt.add_trace(go.Scatter(x=current_df['original_ts'], y=current_df['ac_power'], 
-                                          name="AC Power", line=dict(color="#2ecc71")))
-                fig_rt.add_trace(go.Scatter(x=current_df['original_ts'], y=current_df['dc_power'], 
-                                          name="DC Power", line=dict(color="#3498db", dash='dash')))
-                
-                fig_rt.update_layout(template="plotly_white", height=450, 
+                fig_rt.add_trace(go.Scatter(x=current_df['original_ts'], y=current_df['ac_power'],
+                                          name="AC Power", line=dict(color="#10b981")))
+                fig_rt.add_trace(go.Scatter(x=current_df['original_ts'], y=current_df['dc_power'],
+                                          name="DC Power", line=dict(color="#3b82f6", dash='dash')))
+               
+                fig_rt.update_layout(template="plotly_white", height=450,
                                    xaxis_title="Timestamp", yaxis_title="Power (kW)")
                 chart_placeholder.plotly_chart(fig_rt, use_container_width=True)
                 time.sleep(0.08)

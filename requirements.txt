@@ -1,9 +1,10 @@
+streamlit
 pandas
 numpy
-scikit-learn
-xgboost
-pymongo
-dnspython
-streamlit
 plotly
-pyngrok
+matplotlib
+seaborn
+joblib
+scikit-learn
+statsmodels
+pymongo

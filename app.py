@@ -84,7 +84,6 @@ with tabs[0]:
 
         st.divider()
 
-        # Waterfall Chart
         st.write("**Waterfall: AI Prediction → Actual Yield**")
         fig_wf = go.Figure(go.Waterfall(
             orientation="v",
@@ -101,17 +100,13 @@ with tabs[0]:
 
         st.divider()
 
-        # Biểu đồ kết hợp theo Inverter (Giữ nguyên thứ tự)
         st.subheader("⚖️ So sánh Sản lượng theo từng Inverter")
-
         df_inv = filtered_perf.groupby('source_key').agg({
             'metrics.actual_daily_yield': 'sum',
             'metrics.predicted_daily_yield': 'sum'
         }).reset_index()
 
-        # KHÔNG sắp xếp lại để giống với ngrok
         fig_combined = go.Figure()
-
         fig_combined.add_trace(go.Bar(
             x=df_inv['source_key'],
             y=df_inv['metrics.actual_daily_yield'],
@@ -120,7 +115,6 @@ with tabs[0]:
             text=df_inv['metrics.actual_daily_yield'].round(1),
             textposition='auto'
         ))
-
         fig_combined.add_trace(go.Scatter(
             x=df_inv['source_key'],
             y=df_inv['metrics.predicted_daily_yield'],
@@ -136,24 +130,24 @@ with tabs[0]:
             height=520,
             xaxis_title="Inverter ID (source_key)",
             yaxis_title="Daily Yield (kWh)",
-            legend=dict(orientation="h", y=1.12),
-            barmode='group'
+            legend=dict(orientation="h", y=1.12)
         )
-
         st.plotly_chart(fig_combined, use_container_width=True)
 
     else:
         st.warning("Không có dữ liệu hiệu suất để hiển thị.")
 
-# ====================== TAB 2: Operational Strategy ======================
+# ====================== TAB 2: Operational Strategy (ĐÃ KHÔI PHỤC TRENDLINE) ======================
 with tabs[1]:
     st.subheader("Environmental Correlation & Strategy")
     if not filtered_weather.empty:
+        # Biểu đồ scatter với đường trung bình (trendline)
         fig_opt = px.scatter(
             filtered_weather, 
             x="features_snapshot.irradiation", 
             y="predictions.expected_ac_power", 
             color="weather_condition", 
+            trendline="ols",                    # ← Đã khôi phục đường trung bình
             title="Irradiation vs AC Generation Analysis"
         )
         fig_opt.update_layout(template="plotly_white")
@@ -280,11 +274,7 @@ with tabs[4]:
                 fig_rt.add_trace(go.Scatter(x=current_df['original_ts'], y=current_df['dc_power'], 
                                           name="DC Power", line=dict(color="#3498db", dash='dash')))
                 
-                fig_rt.update_layout(
-                    template="plotly_white", 
-                    height=450, 
-                    xaxis_title="Timestamp", 
-                    yaxis_title="Power (kW)"
-                )
+                fig_rt.update_layout(template="plotly_white", height=450, 
+                                   xaxis_title="Timestamp", yaxis_title="Power (kW)")
                 chart_placeholder.plotly_chart(fig_rt, use_container_width=True)
                 time.sleep(0.08)
